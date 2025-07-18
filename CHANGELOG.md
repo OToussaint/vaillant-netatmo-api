@@ -1,5 +1,11 @@
 # CHANGELOG
 
+##v0.12.2 (2025-07-18)
+
+### Bug Fixes
+
+ * fix: Merge PR #145: Fix issues with … ([`d54c221`](https://github.com/OToussaint/vaillant-netatmo-api/commit/d54c2212eb092fb07786fdc791eb28fb1fd063a3))
+ 
 
 ## v0.12.1 (2025-01-04)
 
