@@ -673,6 +673,7 @@ class Program:
     """Program attribute representing a schedule for a thermostat."""
 
     def __init__(
+        self,
         program_id: str | None = None,
         zones: list[dict] = [],
         timetable: list[dict] = [],
@@ -725,7 +726,6 @@ class Program:
             previous_time_slot_zone_id = time_slot.id
 
         return time_slots
-
 
 class Zone:
     """Zone attribute representing a zone profile which defines how thermostat behaves in a given time slot."""
