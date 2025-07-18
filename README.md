@@ -1,8 +1,8 @@
-# vaillant-netatmo-api
+# vaillant-netatmo-api-reloaded
 
-[![GitHub version](https://badge.fury.io/gh/MislavMandaric%2Fvaillant-netatmo-api.svg)](https://badge.fury.io/gh/MislavMandaric%2Fvaillant-netatmo-api)
-[![PyPI version](https://badge.fury.io/py/vaillant-netatmo-api.svg)](https://badge.fury.io/py/vaillant-netatmo-api)
-![Tests](https://github.com/MislavMandaric/vaillant-netatmo-api/actions/workflows/tests.yml/badge.svg)
+[![GitHub version](https://badge.fury.io/gh/OToussaint%2Fvaillant-netatmo-api-reloaded.svg)](https://badge.fury.io/gh/OToussaint%2Fvaillant-netatmo-api-reloaded)
+[![PyPI version](https://badge.fury.io/py/vaillant-netatmo-api-reloaded.svg)](https://badge.fury.io/py/vaillant-netatmo-api-reloaded)
+![Tests](https://github.com/OToussaint/vaillant-netatmo-api-reloaded/actions/workflows/tests.yml/badge.svg)
 
 
 ## General
@@ -16,7 +16,7 @@ Python 3 library for managing Vaillant thermostats using the Netatmo API. It pro
 Library can be simply installed using pip.
 
 ```bash
-pip install vaillant-netatmo-api
+pip install vaillant-netatmo-api-reloaded
 ```
 
 Library requires Python 3 and has [tenacity](https://github.com/jd/tenacity) and [httpx](https://github.com/encode/httpx) dependencies.
@@ -34,7 +34,7 @@ Since Vaillant uses Resource Owner Password Credentials Grant, there is only one
 * `async_token`: getting a bearer token and storing it in the token store
 
 ```python
-from vaillant_netatmo_api import auth_client
+from vaillant_netatmo_api_reloaded import auth_client
 
 CLIENT_ID = ""
 CLIENT_SECRET = ""
@@ -63,7 +63,7 @@ There are three APIs available for the `ThermostatClient`, all of which require 
 * `async_switch_schedule`: changing active schedule for a device and module
 
 ```python
-from vaillant_netatmo_api import thermostat_client, SystemMode, Token
+from vaillant_netatmo_api_reloaded import thermostat_client, SystemMode, Token
 
 CLIENT_ID = ""
 CLIENT_SECRET = ""
@@ -125,6 +125,7 @@ Similar hooks which represent some kind of application context should be used wh
 
 This library would not exist if it weren't for previous implementations by the following projects:
 
+* https://github.com/MislavMandaric/vaillant-netatmo-api
 * https://github.com/philippelt/netatmo-api-python
 * https://github.com/jabesq/netatmo-api-python
 * https://github.com/samueldumont/netatmo-api-python

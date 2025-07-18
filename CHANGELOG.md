@@ -5,7 +5,9 @@
 ### Bug Fixes
 
  * fix: Merge PR #145: Fix issues with … ([`d54c221`](https://github.com/OToussaint/vaillant-netatmo-api/commit/d54c2212eb092fb07786fdc791eb28fb1fd063a3))
- 
+
+### Notes
+Fork of [vaillant-netatmo-api](https://pypi.org/project/vaillant-netatmo-api/), maintained as `vaillant-netatmo-api-reloaded`. 
 
 ## v0.12.1 (2025-01-04)
 
