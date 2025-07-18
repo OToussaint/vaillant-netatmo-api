@@ -34,7 +34,7 @@ Since Vaillant uses Resource Owner Password Credentials Grant, there is only one
 * `async_token`: getting a bearer token and storing it in the token store
 
 ```python
-from vaillant_netatmo_api_reloaded import auth_client
+from vaillant_netatmo_api import auth_client
 
 CLIENT_ID = ""
 CLIENT_SECRET = ""
@@ -63,7 +63,7 @@ There are three APIs available for the `ThermostatClient`, all of which require 
 * `async_switch_schedule`: changing active schedule for a device and module
 
 ```python
-from vaillant_netatmo_api_reloaded import thermostat_client, SystemMode, Token
+from vaillant_netatmo_api import thermostat_client, SystemMode, Token
 
 CLIENT_ID = ""
 CLIENT_SECRET = ""
