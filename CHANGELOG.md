@@ -1,6 +1,12 @@
 # CHANGELOG
 
-##v0.12.2 (2025-07-18)
+## v0.12.3 (2025-07-18)
+
+### Chores
+
+- bump Python version to 3.12
+
+## v0.12.2 (2025-07-18)
 
 ### Bug Fixes
 
