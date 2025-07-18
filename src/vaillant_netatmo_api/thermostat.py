@@ -51,7 +51,7 @@ class RoomInfo:
     room_type: str
 
 @dataclass
-class ModuleInfo:
+class ModuleInfo: 
     """Module information with module ID."""
     module_id: str
     module_name: str
