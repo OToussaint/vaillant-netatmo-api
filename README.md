@@ -54,9 +54,10 @@ async with auth_client(CLIENT_ID, CLIENT_SECRET, handle_token_update) as client:
 
 ### Accessing the Thermostat API
 
-There are three APIs available for the `ThermostatClient`, all of which require the bearer token for authentication:
+There are six APIs available for the `ThermostatClient`, all of which require the bearer token for authentication:
 
 * `async_get_thermostats_data`: getting all the devices associated with the user account
+* `async_get_home_data`: getting home information including HOME_ID, ROOM_ID, and HWB_ID (module IDs) needed for thermostat control
 * `async_set_system_mode`: changing system mode for a device and module (ie. summer, winter or frostguard)
 * `async_set_minor_mode`: changing minor mode for a device and module (ie. manual mode, away mode or hot water boost mode)
 * `async_sync_schedule`: updating schedule data for a device and module

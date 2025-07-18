@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 
 from contextlib import asynccontextmanager
 from datetime import datetime, time
@@ -26,11 +27,37 @@ _SWITCH_SCHEDULE_PATH = "api/switchschedule"
 _SET_HOT_WATER_TEMPERATURE_PATH = "api/sethotwatertemperature"
 _MODIFY_DEVICE_PARAM_PATH = "api/modifydeviceparam"
 _SET_STATE_PATH = "syncapi/v1/setstate"
+_GET_HOME_DATA_PATH = "api/homesdata"
 _VAILLANT_DEVICE_TYPE = "NAVaillant"
 _VAILLANT_DATA_AMOUNT = "app"
 _VAILLANT_SYNC_DEVICE_ID = "all"
 _RESPONSE_STATUS_OK = "ok"
 _SETPOINT_DEFAULT_DURATION_MINS = 120
+
+
+@dataclass
+class HomeInfo:
+    """Home information containing IDs needed for thermostat control."""
+    home_id: str
+    home_name: str
+    rooms: list["RoomInfo"]
+    modules: list["ModuleInfo"]
+
+@dataclass
+class RoomInfo:
+    """Room information with room ID."""
+    room_id: str
+    room_name: str
+    room_type: str
+
+@dataclass
+class ModuleInfo:
+    """Module information with module ID."""
+    module_id: str
+    module_name: str
+    module_type: str
+    room_id: str | None = None
+    dhw_enabled: bool = False
 
 
 @asynccontextmanager
@@ -431,6 +458,69 @@ class ThermostatClient(BaseClient):
                 "Unknown response error. Check the log for more details.", path=path, data=data, body=body
             )
 
+    async def async_get_home_data(self) -> list[HomeInfo]:
+        """Get home data including HOME_ID, ROOM_ID, and HWB_ID (module IDs).
+        
+        Returns:
+            List of HomeInfo objects containing all necessary IDs for thermostat control.
+        """
+        path = _GET_HOME_DATA_PATH
+        
+        body = await self._post(path, data={})
+        
+        if body["status"] != _RESPONSE_STATUS_OK:
+            raise NonOkResponseException(
+                "Unknown response error. Check the log for more details.", path=path, data={}, body=body
+            )
+        
+        homes = []
+        for home_data in body.get("body", {}).get("homes", []):
+            # Get rooms from home.rooms
+            rooms = []
+            for room_data in home_data.get("rooms", []):
+                rooms.append(RoomInfo(
+                    room_id=room_data["id"],
+                    room_name=room_data.get("name", f"Room {room_data['id']}"),
+                    room_type=room_data.get("type", "")
+                ))
+            
+            # Get HWB modules from schedules > zones > modules where dhw_enabled=true
+            modules = []
+            hwb_modules_found = set()  # Avoid duplicates
+            
+            for schedule in home_data.get("schedules", []):
+                for zone in schedule.get("zones", []):
+                    for module_data in zone.get("modules", []):
+                        if module_data.get("dhw_enabled", False):
+                            module_id = module_data["id"]
+                            if module_id not in hwb_modules_found:
+                                # Get module name from home.modules if available
+                                module_name = "Unknown HWB Module"
+                                module_type = "Unknown"
+                                for home_module in home_data.get("modules", []):
+                                    if home_module["id"] == module_id:
+                                        module_name = home_module.get("name", f"Module {module_id}")
+                                        module_type = home_module.get("type", "Unknown")
+                                        break
+                                
+                                modules.append(ModuleInfo(
+                                    module_id=module_id,
+                                    module_name=module_name,
+                                    module_type=module_type,
+                                    room_id=None,
+                                    dhw_enabled=True
+                                ))
+                                hwb_modules_found.add(module_id)
+            
+            homes.append(HomeInfo(
+                home_id=home_data["id"],
+                home_name=home_data.get("name", "Unknown Home"),
+                rooms=rooms,
+                modules=modules
+            ))
+        
+        return homes
+
     def _get_setpoint_endtime(
         self,
         setpoint_mode: SetpointMode,
@@ -583,7 +673,6 @@ class Program:
     """Program attribute representing a schedule for a thermostat."""
 
     def __init__(
-        self,
         program_id: str | None = None,
         zones: list[dict] = [],
         timetable: list[dict] = [],

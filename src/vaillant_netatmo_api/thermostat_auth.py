@@ -50,7 +50,8 @@ class ThermostatAuth(Auth):
         content = request.content
         headers = request.headers
 
-        if self._is_content_type_json(request):
+        # Always use Bearer token except for token endpoint
+        if not str(url).endswith(_TOKEN_PATH):
             headers = self._headers_with_bearer_token(request.headers)
         else:
             content = self._content_with_access_token(request.content)
@@ -93,7 +94,8 @@ class ThermostatAuth(Auth):
 
     def _headers_without_content_length(self, headers: Headers) -> Headers:
         headers = headers.copy()
-        headers.pop("content-length")
+        if "content-length" in headers:
+            headers.pop("content-length")
         return headers
 
     def _content_with_access_token(self, content: bytes) -> bytes:
@@ -101,6 +103,8 @@ class ThermostatAuth(Auth):
         if self._token_store.token is not None:
             key = "access_token"
             value = self._token_store.token.access_token
-            access_token_content = urlencode([(key, value)], doseq=True).encode("utf-8")
+            access_token_content = urlencode([(key, value)]).encode("utf-8")  # Remove doseq=True
 
-        return b'&'.join([content, access_token_content])
+        if content and content.strip():
+            return content + b'&' + access_token_content
+        return access_token_content
