@@ -176,24 +176,38 @@ refresh_token_response = {
     "expires_at": "",
 }
 
+homesdata_response = {
+    "status": "ok",
+    "body": {
+        "homes": [
+            {
+                "id": "home_id",
+                "name": "Home Name",
+                "rooms": [
+                    {"id": "room_id", "name": "Living Room", "type": "living"}
+                ]
+            }
+        ]
+    }
+}
 
 @pytest.mark.asyncio
 class TestThermostat:
     async def test_async_get_thermostats_data__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata",
-                        data=get_thermostats_data_request).respond(400)
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
+        # Strictly mock the only request made
+        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata", data=get_thermostats_data_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(RequestClientException):
                 await client.async_get_thermostats_data()
 
     async def test_async_get_thermostats_data__server_errors__retry_until_success(self, respx_mock: MockRouter):
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata",
-                        data=get_thermostats_data_request).respond(401)
-        respx_mock.post("https://app.netatmo.net/oauth2/token",
-                        data=refresh_token_request).respond(200, json=refresh_token_response)
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata",
-                        data=get_thermostats_data_refreshed_request).respond(200, json=get_thermostats_data_response)
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
+        # Strictly mock all requests in the retry sequence
+        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata", data=get_thermostats_data_request).respond(401)
+        respx_mock.post("https://app.netatmo.net/oauth2/token", data=refresh_token_request).respond(200, json=refresh_token_response)
+        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata", data=get_thermostats_data_refreshed_request).respond(200, json=get_thermostats_data_response)
 
         async with thermostat_client(refresh_token_request["client_id"], refresh_token_request["client_secret"], token, None) as client:
             devices = await client.async_get_thermostats_data()
@@ -206,10 +220,10 @@ class TestThermostat:
                 assert x[0] == Device(**x[1])
 
     async def test_async_get_thermostats_data__unauthorized_errors__succeed_after_refreshing_token(self, respx_mock: MockRouter):
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata", data=get_thermostats_data_request).mock(side_effect=[
-            httpx.Response(500),
-            httpx.Response(200, json=get_thermostats_data_response),
-        ])
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
+        # Strictly mock both requests in the retry sequence
+        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata", data=get_thermostats_data_request).respond(500)
+        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata", data=get_thermostats_data_request).respond(200, json=get_thermostats_data_response)
 
         async with thermostat_client("", "", token, None) as client:
             devices = await client.async_get_thermostats_data()
@@ -222,8 +236,9 @@ class TestThermostat:
                 assert x[0] == Device(**x[1])
 
     async def test_async_get_thermostats_data__valid_request_params__returns_valid_device_list(self, respx_mock: MockRouter):
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata",
-                        data=get_thermostats_data_request).respond(200, json=get_thermostats_data_response)
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
+        # Strictly mock the only request made
+        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata", data=get_thermostats_data_request).respond(200, json=get_thermostats_data_response)
 
         async with thermostat_client("", "", token, None) as client:
             devices = await client.async_get_thermostats_data()
@@ -235,8 +250,9 @@ class TestThermostat:
                 assert x[0] == Device(**x[1])
 
     async def test_async_get_measure__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.post("https://app.netatmo.net/api/getmeasure",
-                        data=get_measure_request).respond(400)
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
+        # Strictly mock the only request made
+        respx_mock.post("https://app.netatmo.net/api/getmeasure", data=get_measure_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(RequestClientException):
@@ -249,8 +265,9 @@ class TestThermostat:
                 )
 
     async def test_async_get_measure__valid_request_params__returns_valid_measurement_item_list(self, respx_mock: MockRouter):
-        respx_mock.post("https://app.netatmo.net/api/getmeasure",
-                        data=get_measure_request).respond(200, json=get_measure_response)
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
+        # Strictly mock the only request made
+        respx_mock.post("https://app.netatmo.net/api/getmeasure", data=get_measure_request).respond(200, json=get_measure_response)
 
         async with thermostat_client("", "", token, None) as client:
             measurement_items = await client.async_get_measure(
@@ -268,6 +285,7 @@ class TestThermostat:
                 assert x[0] == MeasurementItem(**x[1])
 
     async def test_async_set_system_mode__invalid_request_params__raises_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setsystemmode",
                         data=set_system_mode_request).respond(400)
 
@@ -276,6 +294,7 @@ class TestThermostat:
                 await client.async_set_system_mode(set_system_mode_request["device_id"], set_system_mode_request["module_id"], SystemMode.SUMMER)
 
     async def test_async_set_system_mode__server_errors__retry_until_success(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setsystemmode", data=set_system_mode_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=set_system_mode_response),
@@ -287,6 +306,7 @@ class TestThermostat:
             assert respx_mock.calls.call_count == 2
 
     async def test_async_set_system_mode__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setsystemmode",
                         data=set_system_mode_request).respond(200, json=set_system_mode_response)
 
@@ -294,6 +314,7 @@ class TestThermostat:
             await client.async_set_system_mode(set_system_mode_request["device_id"], set_system_mode_request["module_id"], SystemMode.SUMMER)
 
     async def test_async_set_minor_mode__invalid_request_params__raises_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setminormode",
                         data=set_minor_mode_request).respond(400)
 
@@ -302,6 +323,7 @@ class TestThermostat:
                 await client.async_set_minor_mode(set_minor_mode_request["device_id"], set_minor_mode_request["module_id"], SetpointMode.AWAY, True)
 
     async def test_async_set_minor_mode__server_errors__retry_until_success(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setminormode", data=set_minor_mode_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=set_minor_mode_response),
@@ -371,6 +393,7 @@ class TestThermostat:
             "status": "ok",
         }
 
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
@@ -431,6 +454,7 @@ class TestThermostat:
             "status": "ok",
         }
 
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
@@ -455,6 +479,7 @@ class TestThermostat:
             "status": "ok",
         }
 
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
@@ -487,6 +512,7 @@ class TestThermostat:
             "status": "ok",
         }
 
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
@@ -569,6 +595,7 @@ class TestThermostat:
             "status": "ok",
         }
 
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
@@ -611,6 +638,7 @@ class TestThermostat:
             "status": "ok",
         }
 
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
@@ -693,6 +721,7 @@ class TestThermostat:
             "status": "ok",
         }
 
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
@@ -705,6 +734,7 @@ class TestThermostat:
             )
 
     async def test_async_sync_schedule__invalid_request_params__raises_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/syncschedule",
                         data=sync_schedule_request).respond(400)
 
@@ -720,6 +750,7 @@ class TestThermostat:
                 )
 
     async def test_async_sync_schedule__server_errors__retry_until_success(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/syncschedule", data=sync_schedule_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=sync_schedule_response),
@@ -738,6 +769,7 @@ class TestThermostat:
             assert respx_mock.calls.call_count == 2
 
     async def test_async_sync_schedule__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/syncschedule",
                         data=sync_schedule_request).respond(200, json=sync_schedule_response)
 
@@ -752,6 +784,7 @@ class TestThermostat:
             )
 
     async def test_async_switch_schedule__invalid_request_params__raises_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/switchschedule",
                         data=switch_schedule_request).respond(400)
 
@@ -764,6 +797,7 @@ class TestThermostat:
                 )
 
     async def test_async_switch_schedule__server_errors__retry_until_success(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/switchschedule", data=switch_schedule_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=switch_schedule_response),
@@ -779,6 +813,7 @@ class TestThermostat:
             assert respx_mock.calls.call_count == 2
 
     async def test_async_switch_schedule__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/switchschedule",
                         data=switch_schedule_request).respond(200, json=switch_schedule_response)
 
@@ -790,6 +825,7 @@ class TestThermostat:
             )
 
     async def test_async_set_hot_water_temperature__invalid_request_params__raises_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/sethotwatertemperature",
                         data=async_set_hot_water_temperature_request).respond(400)
 
@@ -801,6 +837,7 @@ class TestThermostat:
                 )
 
     async def test_async_set_hot_water_temperature__server_errors__retry_until_success(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/sethotwatertemperature", data=async_set_hot_water_temperature_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=async_set_hot_water_temperature_response),
@@ -815,6 +852,7 @@ class TestThermostat:
             assert respx_mock.calls.call_count == 2
 
     async def test_async_set_hot_water_temperature__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/sethotwatertemperature",
                         data=async_set_hot_water_temperature_request).respond(200, json=async_set_hot_water_temperature_response)
 
@@ -825,6 +863,7 @@ class TestThermostat:
             )
 
     async def test_async_modify_device_param__invalid_request_params__raises_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/modifydeviceparam",
                         data=async_modify_device_param_request).respond(400)
 
@@ -836,6 +875,7 @@ class TestThermostat:
                 )
 
     async def test_async_modify_device_param__server_errors__retry_until_success(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/modifydeviceparam", data=async_modify_device_param_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=async_modify_device_param_response),
@@ -850,6 +890,7 @@ class TestThermostat:
             assert respx_mock.calls.call_count == 2
 
     async def test_async_modify_device_param__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
+        respx_mock.post("https://app.netatmo.net/api/homesdata").respond(200, json=homesdata_response)
         respx_mock.post("https://app.netatmo.net/api/modifydeviceparam",
                         data=async_modify_device_param_request).respond(200, json=async_modify_device_param_response)
 
