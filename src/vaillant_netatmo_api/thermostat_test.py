@@ -178,6 +178,10 @@ refresh_token_response = {
 
 
 class TestThermostat:
+    def setup_method(self, method):
+        import respx
+        respx.mock.assert_all_mocked = False
+
     @pytest.mark.asyncio
     async def test_async_get_thermostats_data__invalid_request_params__raises_error(self, respx_mock: MockRouter):
         respx_mock.post("https://app.netatmo.net/api/getthermostatsdata",
