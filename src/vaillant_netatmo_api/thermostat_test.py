@@ -177,27 +177,22 @@ refresh_token_response = {
 }
 
 
+@pytest.mark.asyncio
 class TestThermostat:
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_get_thermostats_data__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata",
+        respx_mock.post("https://api.netatmo.com/api/getthermostatsdata",
                         data=get_thermostats_data_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(RequestClientException):
                 await client.async_get_thermostats_data()
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_get_thermostats_data__server_errors__retry_until_success(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata",
+        respx_mock.post("https://api.netatmo.com/api/getthermostatsdata",
                         data=get_thermostats_data_request).respond(401)
-        respx_mock.post("https://app.netatmo.net/oauth2/token",
+        respx_mock.post("https://api.netatmo.com/oauth2/token",
                         data=refresh_token_request).respond(200, json=refresh_token_response)
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata",
+        respx_mock.post("https://api.netatmo.com/api/getthermostatsdata",
                         data=get_thermostats_data_refreshed_request).respond(200, json=get_thermostats_data_response)
 
         async with thermostat_client(refresh_token_request["client_id"], refresh_token_request["client_secret"], token, None) as client:
@@ -210,11 +205,8 @@ class TestThermostat:
             for x in zip(devices, expected_devices):
                 assert x[0] == Device(**x[1])
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_get_thermostats_data__unauthorized_errors__succeed_after_refreshing_token(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata", data=get_thermostats_data_request).mock(side_effect=[
+        respx_mock.post("https://api.netatmo.com/api/getthermostatsdata", data=get_thermostats_data_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=get_thermostats_data_response),
         ])
@@ -229,11 +221,8 @@ class TestThermostat:
             for x in zip(devices, expected_devices):
                 assert x[0] == Device(**x[1])
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_get_thermostats_data__valid_request_params__returns_valid_device_list(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/getthermostatsdata",
+        respx_mock.post("https://api.netatmo.com/api/getthermostatsdata",
                         data=get_thermostats_data_request).respond(200, json=get_thermostats_data_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -245,11 +234,8 @@ class TestThermostat:
             for x in zip(devices, expected_devices):
                 assert x[0] == Device(**x[1])
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_get_measure__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/getmeasure",
+        respx_mock.post("https://api.netatmo.com/api/getmeasure",
                         data=get_measure_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
@@ -262,11 +248,8 @@ class TestThermostat:
                     datetime.fromtimestamp(get_measure_request["date_begin"]),
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_get_measure__valid_request_params__returns_valid_measurement_item_list(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/getmeasure",
+        respx_mock.post("https://api.netatmo.com/api/getmeasure",
                         data=get_measure_request).respond(200, json=get_measure_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -284,22 +267,16 @@ class TestThermostat:
             for x in zip(measurement_items, expected_measurement_items):
                 assert x[0] == MeasurementItem(**x[1])
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_system_mode__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/setsystemmode",
+        respx_mock.post("https://api.netatmo.com/api/setsystemmode",
                         data=set_system_mode_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(RequestClientException):
                 await client.async_set_system_mode(set_system_mode_request["device_id"], set_system_mode_request["module_id"], SystemMode.SUMMER)
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_system_mode__server_errors__retry_until_success(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/setsystemmode", data=set_system_mode_request).mock(side_effect=[
+        respx_mock.post("https://api.netatmo.com/api/setsystemmode", data=set_system_mode_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=set_system_mode_response),
         ])
@@ -309,32 +286,23 @@ class TestThermostat:
 
             assert respx_mock.calls.call_count == 2
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_system_mode__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/setsystemmode",
+        respx_mock.post("https://api.netatmo.com/api/setsystemmode",
                         data=set_system_mode_request).respond(200, json=set_system_mode_response)
 
         async with thermostat_client("", "", token, None) as client:
             await client.async_set_system_mode(set_system_mode_request["device_id"], set_system_mode_request["module_id"], SystemMode.SUMMER)
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/setminormode",
+        respx_mock.post("https://api.netatmo.com/api/setminormode",
                         data=set_minor_mode_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(RequestClientException):
                 await client.async_set_minor_mode(set_minor_mode_request["device_id"], set_minor_mode_request["module_id"], SetpointMode.AWAY, True)
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__server_errors__retry_until_success(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/setminormode", data=set_minor_mode_request).mock(side_effect=[
+        respx_mock.post("https://api.netatmo.com/api/setminormode", data=set_minor_mode_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=set_minor_mode_response),
         ])
@@ -349,7 +317,6 @@ class TestThermostat:
 
             assert respx_mock.calls.call_count == 2
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__activate_manual_without_temp_and_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -360,7 +327,6 @@ class TestThermostat:
                     True,
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__activate_manual_without_temp__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -372,7 +338,6 @@ class TestThermostat:
                     setpoint_endtime=datetime.now(),
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__activate_manual_without_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -384,10 +349,7 @@ class TestThermostat:
                     setpoint_temp=25,
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__activate_manual_with_temp_and_endtime__executes_successfully(self, respx_mock: MockRouter, mocker: MockerFixture):
-        respx_mock.assert_all_mocked = False
         some_time = datetime(2021, 11, 22, 1, 0)
 
         mocker.patch("vaillant_netatmo_api.thermostat.now",
@@ -409,7 +371,7 @@ class TestThermostat:
             "status": "ok",
         }
 
-        respx_mock.post("https://app.netatmo.net/api/setminormode",
+        respx_mock.post("https://api.netatmo.com/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -422,8 +384,6 @@ class TestThermostat:
                 setpoint_temp=25,
             )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__deactivate_manual_with_temp_and_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -436,7 +396,6 @@ class TestThermostat:
                     setpoint_endtime=datetime.now(),
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__deactivate_manual_with_temp__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -448,7 +407,6 @@ class TestThermostat:
                     setpoint_temp=25,
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__deactivate_manual_with_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -460,10 +418,7 @@ class TestThermostat:
                     setpoint_endtime=datetime.now(),
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__deactivate_manual_without_temp_and_endtime__executes_successfully(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
         set_minor_mode_request = {
             "device_id": "device",
             "module_id": "module",
@@ -476,7 +431,7 @@ class TestThermostat:
             "status": "ok",
         }
 
-        respx_mock.post("https://app.netatmo.net/api/setminormode",
+        respx_mock.post("https://api.netatmo.com/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -487,10 +442,7 @@ class TestThermostat:
                 False,
             )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__activate_away_without_temp_and_endtime__executes_successfully(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
         set_minor_mode_request = {
             "device_id": "device",
             "module_id": "module",
@@ -503,7 +455,7 @@ class TestThermostat:
             "status": "ok",
         }
 
-        respx_mock.post("https://app.netatmo.net/api/setminormode",
+        respx_mock.post("https://api.netatmo.com/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -514,10 +466,7 @@ class TestThermostat:
                 True,
             )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__activate_away_without_temp__executes_successfully(self, respx_mock: MockRouter, mocker: MockerFixture):
-        respx_mock.assert_all_mocked = False
         some_time = datetime(2021, 11, 22, 1, 0)
 
         mocker.patch("vaillant_netatmo_api.thermostat.now",
@@ -538,7 +487,7 @@ class TestThermostat:
             "status": "ok",
         }
 
-        respx_mock.post("https://app.netatmo.net/api/setminormode",
+        respx_mock.post("https://api.netatmo.com/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -550,7 +499,6 @@ class TestThermostat:
                 setpoint_endtime=endtime,
             )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__activate_away_without_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -562,7 +510,6 @@ class TestThermostat:
                     setpoint_temp=25,
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__activate_away_with_temp_and_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -575,7 +522,6 @@ class TestThermostat:
                     setpoint_endtime=datetime.now(),
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__deactivate_away_with_temp_and_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -588,7 +534,6 @@ class TestThermostat:
                     setpoint_endtime=datetime.now(),
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__deactivate_away_with_temp__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -600,7 +545,6 @@ class TestThermostat:
                     setpoint_temp=25,
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__deactivate_away_with_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -612,10 +556,7 @@ class TestThermostat:
                     setpoint_endtime=datetime.now(),
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__deactivate_away_without_temp_and_endtime__executes_successfully(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
         set_minor_mode_request = {
             "device_id": "device",
             "module_id": "module",
@@ -628,7 +569,7 @@ class TestThermostat:
             "status": "ok",
         }
 
-        respx_mock.post("https://app.netatmo.net/api/setminormode",
+        respx_mock.post("https://api.netatmo.com/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -639,7 +580,6 @@ class TestThermostat:
                 False,
             )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__activate_hwb_without_temp_and_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -650,10 +590,7 @@ class TestThermostat:
                     True,
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__activate_hwb_without_temp__executes_successfully(self, respx_mock: MockRouter, mocker: MockerFixture):
-        respx_mock.assert_all_mocked = False
         some_time = datetime(2021, 11, 22, 1, 0)
 
         mocker.patch("vaillant_netatmo_api.thermostat.now",
@@ -674,7 +611,7 @@ class TestThermostat:
             "status": "ok",
         }
 
-        respx_mock.post("https://app.netatmo.net/api/setminormode",
+        respx_mock.post("https://api.netatmo.com/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -686,7 +623,6 @@ class TestThermostat:
                 setpoint_endtime=endtime,
             )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__activate_hwb_without_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -698,7 +634,6 @@ class TestThermostat:
                     setpoint_temp=25,
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__activate_hwb_with_temp_and_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -711,7 +646,6 @@ class TestThermostat:
                     setpoint_endtime=datetime.now(),
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__deactivate_hwb_with_temp_and_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -724,7 +658,6 @@ class TestThermostat:
                     setpoint_endtime=datetime.now(),
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__deactivate_hwb_with_temp__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -736,7 +669,6 @@ class TestThermostat:
                     setpoint_temp=25,
                 )
 
-    @pytest.mark.asyncio
     async def test_async_set_minor_mode__deactivate_hwb_with_endtime__raises_error(self):
         async with thermostat_client("", "", token, None) as client:
             with pytest.raises(UnsuportedArgumentsException):
@@ -748,10 +680,7 @@ class TestThermostat:
                     setpoint_endtime=datetime.now(),
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_minor_mode__deactivate_hwb_without_temp_and_endtime__executes_successfully(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
         set_minor_mode_request = {
             "device_id": "device",
             "module_id": "module",
@@ -764,7 +693,7 @@ class TestThermostat:
             "status": "ok",
         }
 
-        respx_mock.post("https://app.netatmo.net/api/setminormode",
+        respx_mock.post("https://api.netatmo.com/api/setminormode",
                         data=set_minor_mode_request).respond(200, json=set_minor_mode_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -775,11 +704,8 @@ class TestThermostat:
                 False,
             )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_sync_schedule__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/syncschedule",
+        respx_mock.post("https://api.netatmo.com/api/syncschedule",
                         data=sync_schedule_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
@@ -793,11 +719,8 @@ class TestThermostat:
                     [TimeSlot(**{"id": 0, "m_offset": 0})],
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_sync_schedule__server_errors__retry_until_success(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/syncschedule", data=sync_schedule_request).mock(side_effect=[
+        respx_mock.post("https://api.netatmo.com/api/syncschedule", data=sync_schedule_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=sync_schedule_response),
         ])
@@ -814,11 +737,8 @@ class TestThermostat:
 
             assert respx_mock.calls.call_count == 2
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_sync_schedule__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/syncschedule",
+        respx_mock.post("https://api.netatmo.com/api/syncschedule",
                         data=sync_schedule_request).respond(200, json=sync_schedule_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -831,11 +751,8 @@ class TestThermostat:
                 [TimeSlot(**{"id": 0, "m_offset": 0})],
             )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_switch_schedule__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/switchschedule",
+        respx_mock.post("https://api.netatmo.com/api/switchschedule",
                         data=switch_schedule_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
@@ -846,11 +763,8 @@ class TestThermostat:
                     sync_schedule_request["schedule_id"],
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_switch_schedule__server_errors__retry_until_success(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/switchschedule", data=switch_schedule_request).mock(side_effect=[
+        respx_mock.post("https://api.netatmo.com/api/switchschedule", data=switch_schedule_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=switch_schedule_response),
         ])
@@ -864,11 +778,8 @@ class TestThermostat:
 
             assert respx_mock.calls.call_count == 2
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_switch_schedule__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/switchschedule",
+        respx_mock.post("https://api.netatmo.com/api/switchschedule",
                         data=switch_schedule_request).respond(200, json=switch_schedule_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -878,11 +789,8 @@ class TestThermostat:
                 sync_schedule_request["schedule_id"],
             )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_hot_water_temperature__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/sethotwatertemperature",
+        respx_mock.post("https://api.netatmo.com/api/sethotwatertemperature",
                         data=async_set_hot_water_temperature_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
@@ -892,11 +800,8 @@ class TestThermostat:
                     async_set_hot_water_temperature_request["dhw"],
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_hot_water_temperature__server_errors__retry_until_success(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/sethotwatertemperature", data=async_set_hot_water_temperature_request).mock(side_effect=[
+        respx_mock.post("https://api.netatmo.com/api/sethotwatertemperature", data=async_set_hot_water_temperature_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=async_set_hot_water_temperature_response),
         ])
@@ -909,11 +814,8 @@ class TestThermostat:
 
             assert respx_mock.calls.call_count == 2
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_set_hot_water_temperature__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/sethotwatertemperature",
+        respx_mock.post("https://api.netatmo.com/api/sethotwatertemperature",
                         data=async_set_hot_water_temperature_request).respond(200, json=async_set_hot_water_temperature_response)
 
         async with thermostat_client("", "", token, None) as client:
@@ -922,11 +824,8 @@ class TestThermostat:
                 async_set_hot_water_temperature_request["dhw"],
             )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_modify_device_param__invalid_request_params__raises_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/modifydeviceparam",
+        respx_mock.post("https://api.netatmo.com/api/modifydeviceparam",
                         data=async_modify_device_param_request).respond(400)
 
         async with thermostat_client("", "", token, None) as client:
@@ -936,11 +835,8 @@ class TestThermostat:
                     async_modify_device_param_request["setpoint_default_duration"],
                 )
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_modify_device_param__server_errors__retry_until_success(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/modifydeviceparam", data=async_modify_device_param_request).mock(side_effect=[
+        respx_mock.post("https://api.netatmo.com/api/modifydeviceparam", data=async_modify_device_param_request).mock(side_effect=[
             httpx.Response(500),
             httpx.Response(200, json=async_modify_device_param_response),
         ])
@@ -953,11 +849,8 @@ class TestThermostat:
 
             assert respx_mock.calls.call_count == 2
 
-    @pytest.mark.asyncio
-    @pytest.mark.respx_mock
     async def test_async_modify_device_param__valid_request_params__doesnt_raise_error(self, respx_mock: MockRouter):
-        respx_mock.assert_all_mocked = False
-        respx_mock.post("https://app.netatmo.net/api/modifydeviceparam",
+        respx_mock.post("https://api.netatmo.com/api/modifydeviceparam",
                         data=async_modify_device_param_request).respond(200, json=async_modify_device_param_response)
 
         async with thermostat_client("", "", token, None) as client:
