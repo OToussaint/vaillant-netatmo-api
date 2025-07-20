@@ -7,7 +7,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, stop_af
 
 from .errors import RetryableException, client_error_handler
 
-_API_HOST = "https://app.netatmo.net/"
+_API_HOST = "https://api.netatmo.com/"
 
 
 class BaseClient:
