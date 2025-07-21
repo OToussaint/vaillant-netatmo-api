@@ -459,7 +459,7 @@ class ThermostatClient(BaseClient):
             )
 
     async def async_get_home_data(self) -> list[HomeInfo]:
-        """Get home data including HOME_ID and ROOM_ID
+        """Get home data including HOME_ID, ROOM_ID, and HWB_ID (module IDs).
         
         Returns:
             List of HomeInfo objects containing all necessary IDs for thermostat control.
@@ -484,12 +484,39 @@ class ThermostatClient(BaseClient):
                     room_type=room_data.get("type", "")
                 ))
             
-            # Remove modules array from HomeInfo
+            # Get HWB modules from schedules > zones > modules where dhw_enabled=true
+            modules = []
+            hwb_modules_found = set()  # Avoid duplicates
+            
+            for schedule in home_data.get("schedules", []):
+                for zone in schedule.get("zones", []):
+                    for module_data in zone.get("modules", []):
+                        if module_data.get("dhw_enabled", False):
+                            module_id = module_data["id"]
+                            if module_id not in hwb_modules_found:
+                                # Get module name from home.modules if available
+                                module_name = "Unknown HWB Module"
+                                module_type = "Unknown"
+                                for home_module in home_data.get("modules", []):
+                                    if home_module["id"] == module_id:
+                                        module_name = home_module.get("name", f"Module {module_id}")
+                                        module_type = home_module.get("type", "Unknown")
+                                        break
+                                
+                                modules.append(ModuleInfo(
+                                    module_id=module_id,
+                                    module_name=module_name,
+                                    module_type=module_type,
+                                    room_id=None,
+                                    dhw_enabled=True
+                                ))
+                                hwb_modules_found.add(module_id)
+            
             homes.append(HomeInfo(
                 home_id=home_data["id"],
                 home_name=home_data.get("name", "Unknown Home"),
                 rooms=rooms,
-                modules=[]  # Remove population, keep empty for dataclass compatibility
+                modules=modules
             ))
         
         return homes
