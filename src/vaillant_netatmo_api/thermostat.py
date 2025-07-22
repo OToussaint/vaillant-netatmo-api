@@ -49,6 +49,8 @@ class RoomInfo:
     room_id: str
     room_name: str
     room_type: str
+    room_module_id: str
+    room_device_id: str
 
 @dataclass
 class ModuleInfo: 
@@ -478,12 +480,23 @@ class ThermostatClient(BaseClient):
             # Get rooms from home.rooms
             rooms = []
             for room_data in home_data.get("rooms", []):
-                rooms.append(RoomInfo(
-                    room_id=room_data["id"],
-                    room_name=room_data.get("name", f"Room {room_data['id']}"),
-                    room_type=room_data.get("type", "")
-                ))
-            
+                if room_data.get("module_ids"):
+                    rooms.append(RoomInfo(
+                        room_id=room_data["id"],
+                        room_name=room_data.get("name", f"Room {room_data['id']}"),
+                        room_type=room_data.get("type", ""),
+                        room_module_id=room_data.get("module_ids", "")[0],
+                        room_device_id=room_data.get("therm_relay","")
+                    ))
+                else:
+                    rooms.append(RoomInfo(
+                        room_id=room_data["id"],
+                        room_name=room_data.get("name", f"Room {room_data['id']}"),
+                        room_type=room_data.get("type", ""),
+                        room_module_id="",
+                        room_device_id=""
+                    ))
+
             # Get HWB modules from schedules > zones > modules where dhw_enabled=true
             modules = []
             hwb_modules_found = set()  # Avoid duplicates
